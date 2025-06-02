@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Pedidos</title>
+    <link rel="stylesheet" href="../css/styles.css" />
+  </head>
+  <body>
+    <header>
+      <div class="nav-container">
+        <nav>
+          <a href="../index.html" id="nav-inicio">Início</a>
+          <a href="../clientes/lista.html" id="nav-clientes">Clientes</a>
+          <a href="../categorias/lista.html" id="nav-categorias">Categorias</a>
+          <a href="../produtos/lista.html" id="nav-produtos">Produtos</a>
+          <a href="../pedidos/lista.html" id="nav-pedidos">Pedidos</a>
+        </nav>
+      </div>
+    </header>
+    <script>
+      const path = window.location.pathname;
+      if (path.endsWith("/index.html") || path === "/" || path.endsWith("/")) {
+        document.getElementById("nav-inicio").classList.add("active");
+      } else if (path.includes("/clientes/")) {
+        document.getElementById("nav-clientes").classList.add("active");
+      } else if (path.includes("/categorias/")) {
+        document.getElementById("nav-categorias").classList.add("active");
+      } else if (path.includes("/produtos/")) {
+        document.getElementById("nav-produtos").classList.add("active");
+      } else if (path.includes("/pedidos/")) {
+        document.getElementById("nav-pedidos").classList.add("active");
+      }
+    </script>
+
+    <div class="main-container">
+      <div
+        style="
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        "
+      >
+        <h2>Pedidos</h2>
+        <a href="cadastro.html" class="button-main" style="margin: 0"
+          >Cadastrar novo</a
+        >
+      </div>
+      <form
+        id="form-filtro"
+        style="display: flex; gap: 12px; flex-wrap: wrap; margin: 18px 0 8px 0"
+      >
+        <input
+          type="number"
+          id="filtro-cliente"
+          placeholder="ID do cliente"
+          min="1"
+          style="width: 110px"
+        />
+        <input type="date" id="filtro-data-inicio" placeholder="Data início" />
+        <input type="date" id="filtro-data-fim" placeholder="Data fim" />
+        <input
+          type="number"
+          id="filtro-total-min"
+          placeholder="Total mínimo"
+          step="0.01"
+          style="width: 110px"
+        />
+        <input
+          type="number"
+          id="filtro-total-max"
+          placeholder="Total máximo"
+          step="0.01"
+          style="width: 110px"
+        />
+        <button type="submit" class="button-main" style="margin-left: 8px">
+          Consulta Avançada
+        </button>
+        <button type="button" id="btn-todos" style="margin-left: 0">
+          Todos
+        </button>
+      </form>
+      <input
+        type="text"
+        id="busca"
+        placeholder="Buscar por cliente..."
+        style="margin: 0 0 8px 0; max-width: 320px"
+      />
+      <div id="feedback-lista"></div>
+      <table id="pedidos-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Cliente</th>
+            <th>Data</th>
+            <th>Total</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <script>
+      let pedidos = [];
+
+      function formatarData(dataStr) {
+        if (!dataStr) return "";
+        const d = new Date(dataStr);
+        if (isNaN(d)) return dataStr;
+        const dia = String(d.getDate()).padStart(2, "0");
+        const mes = String(d.getMonth() + 1).padStart(2, "0");
+        const ano = d.getFullYear();
+        return `${dia}/${mes}/${ano}`;
+      }
+
+      async function carregarPedidos() {
+        const tbody = document.querySelector("#pedidos-table tbody");
+        tbody.innerHTML = "";
+        document.getElementById("feedback-lista").textContent = "";
+
+        try {
+          const resp = await fetch("http://localhost:8080/api/pedidos");
+          if (!resp.ok) throw new Error("Erro ao buscar pedidos");
+          pedidos = await resp.json();
+          mostrarPedidos(pedidos, false);
+        } catch (e) {
+          document.getElementById("feedback-lista").textContent =
+            "Erro ao carregar pedidos.";
+        }
+      }
+
+      async function carregarPedidosAvancado(filtros) {
+        const tbody = document.querySelector("#pedidos-table tbody");
+        tbody.innerHTML = "";
+        document.getElementById("feedback-lista").textContent = "";
+        let url = "http://localhost:8080/api/pedidos/consulta-avancada?";
+
+        url += Object.entries(filtros)
+          .filter(([_, v]) => v !== undefined && v !== null && v !== "")
+          .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
+          .join("&");
+        try {
+          const resp = await fetch(url);
+          if (!resp.ok) throw new Error("Erro ao buscar pedidos avançados");
+          const lista = await resp.json();
+          pedidos = lista;
+          mostrarPedidos(lista, true);
+        } catch (e) {
+          document.getElementById("feedback-lista").textContent =
+            "Erro ao carregar pedidos (consulta avançada).";
+        }
+      }
+
+      function mostrarPedidos(lista, avancado) {
+        const tbody = document.querySelector("#pedidos-table tbody");
+        tbody.innerHTML = "";
+        if (!lista.length) {
+          tbody.innerHTML =
+            '<tr><td colspan="5" style="text-align:center;color:#888;">Nenhum pedido encontrado.</td></tr>';
+          return;
+        }
+        lista.forEach((ped) => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+          <td>${ped.id || ped.pedidoId || ""}</td>
+          <td>${ped.cliente ? ped.cliente.nome : ped.clienteNome || ""}</td>
+          <td>${formatarData(ped.data)}</td>
+          <td>R$ ${(ped.total || 0).toLocaleString("pt-BR", {
+            minimumFractionDigits: 2,
+          })}</td>
+          <td>
+            <button class="action-btn delete" onclick="excluirPedido(${
+              ped.id || ped.pedidoId
+            })">Excluir</button>
+          </td>
+        `;
+          tbody.appendChild(tr);
+        });
+      }
+
+      document.getElementById("busca").addEventListener("input", function () {
+        const q = this.value.trim().toLowerCase();
+        mostrarPedidos(
+          q
+            ? pedidos.filter(
+                (p) =>
+                  (p.cliente &&
+                    p.cliente.nome &&
+                    p.cliente.nome.toLowerCase().includes(q)) ||
+                  (p.clienteNome && p.clienteNome.toLowerCase().includes(q))
+              )
+            : pedidos
+        );
+      });
+
+      async function excluirPedido(id) {
+        if (!confirm("Tem certeza que deseja excluir este pedido?")) return;
+        try {
+          const resp = await fetch("http://localhost:8080/api/pedidos/" + id, {
+            method: "DELETE",
+          });
+          if (resp.status === 204) {
+            carregarPedidos();
+          } else {
+            const data = await resp.json();
+            alert(data.message || "Erro ao excluir o pedido.");
+          }
+        } catch (e) {
+          alert("Erro ao excluir pedido.");
+        }
+      }
+
+      document
+        .getElementById("form-filtro")
+        .addEventListener("submit", function (e) {
+          e.preventDefault();
+          const filtros = {
+            clienteId: document.getElementById("filtro-cliente").value,
+            dataInicio: document.getElementById("filtro-data-inicio").value,
+            dataFim: document.getElementById("filtro-data-fim").value,
+            totalMin: document.getElementById("filtro-total-min").value,
+            totalMax: document.getElementById("filtro-total-max").value,
+          };
+          carregarPedidosAvancado(filtros);
+        });
+
+      document
+        .getElementById("btn-todos")
+        .addEventListener("click", function () {
+          carregarPedidos();
+          document.getElementById("form-filtro").reset();
+        });
+
+      carregarPedidos();
+    </script>
+  </body>
+</html>

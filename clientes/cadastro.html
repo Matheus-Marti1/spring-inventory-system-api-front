@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Cadastrar Cliente</title>
+    <link rel="stylesheet" href="../css/styles.css" />
+  </head>
+  <body>
+    <header>
+      <div class="nav-container">
+        <nav>
+          <a href="../index.html" id="nav-inicio">Início</a>
+          <a href="../clientes/lista.html" id="nav-clientes">Clientes</a>
+          <a href="../categorias/lista.html" id="nav-categorias">Categorias</a>
+          <a href="../produtos/lista.html" id="nav-produtos">Produtos</a>
+          <a href="../pedidos/lista.html" id="nav-pedidos">Pedidos</a>
+        </nav>
+      </div>
+    </header>
+    <script>
+      const path = window.location.pathname;
+      if (path.endsWith("/index.html") || path === "/" || path.endsWith("/")) {
+        document.getElementById("nav-inicio").classList.add("active");
+      } else if (path.includes("/clientes/")) {
+        document.getElementById("nav-clientes").classList.add("active");
+      } else if (path.includes("/categorias/")) {
+        document.getElementById("nav-categorias").classList.add("active");
+      } else if (path.includes("/produtos/")) {
+        document.getElementById("nav-produtos").classList.add("active");
+      } else if (path.includes("/pedidos/")) {
+        document.getElementById("nav-pedidos").classList.add("active");
+      }
+    </script>
+
+    <div class="main-container">
+      <h2>Cadastrar Cliente</h2>
+      <form id="cliente-form">
+        <label for="nome">Nome*</label>
+        <input type="text" id="nome" name="nome" required maxlength="100" />
+
+        <label for="email">E-mail*</label>
+        <input type="email" id="email" name="email" required maxlength="100" />
+
+        <label for="telefone">Telefone</label>
+        <input
+          type="tel"
+          id="telefone"
+          name="telefone"
+          maxlength="15"
+          placeholder="(xx) xxxxx-xxxx"
+        />
+
+        <div class="form-actions">
+          <button type="submit" class="button-main">Salvar</button>
+          <a
+            href="lista.html"
+            class="button-main"
+            style="background: #bfc9d1; color: #222; text-decoration: none"
+            >Cancelar</a
+          >
+        </div>
+        <div id="form-feedback"></div>
+      </form>
+    </div>
+
+    <script>
+      document
+        .getElementById("telefone")
+        .addEventListener("input", function (e) {
+          let value = e.target.value.replace(/\D/g, "");
+          if (value.length > 11) value = value.slice(0, 11);
+          if (value.length > 10) {
+            value = value.replace(/^(\d{2})(\d{5})(\d{4}).*/, "($1) $2-$3");
+          } else if (value.length > 6) {
+            value = value.replace(/^(\d{2})(\d{4})(\d{0,4}).*/, "($1) $2-$3");
+          } else if (value.length > 2) {
+            value = value.replace(/^(\d{2})(\d{0,5})/, "($1) $2");
+          } else {
+            value = value.replace(/^(\d*)/, "($1");
+          }
+          e.target.value = value;
+        });
+
+      document
+        .getElementById("cliente-form")
+        .addEventListener("submit", async function (e) {
+          e.preventDefault();
+          const nome = document.getElementById("nome").value.trim();
+          const email = document.getElementById("email").value.trim();
+          const telefone = document
+            .getElementById("telefone")
+            .value.replace(/\D/g, "");
+
+          const payload = { nome, email, telefone };
+          const feedback = document.getElementById("form-feedback");
+          feedback.textContent = "";
+          feedback.className = "feedback";
+
+          try {
+            const resp = await fetch("http://localhost:8080/api/clientes", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload),
+            });
+            if (resp.ok) {
+              feedback.textContent = "Cliente cadastrado com sucesso!";
+              feedback.classList.add("success");
+              setTimeout(() => {
+                window.location.href = "lista.html";
+              }, 800);
+            } else {
+              const data = await resp.json();
+              feedback.textContent =
+                data.message || "Erro ao cadastrar cliente.";
+              feedback.classList.add("error");
+            }
+          } catch (err) {
+            feedback.textContent = "Erro: não foi possível conectar à API.";
+            feedback.classList.add("error");
+          }
+        });
+    </script>
+  </body>
+</html>

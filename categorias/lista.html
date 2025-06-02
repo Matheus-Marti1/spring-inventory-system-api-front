@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Categorias</title>
+    <link rel="stylesheet" href="../css/styles.css" />
+  </head>
+  <body>
+    <header>
+      <div class="nav-container">
+        <nav>
+          <a href="../index.html" id="nav-inicio">Início</a>
+          <a href="../clientes/lista.html" id="nav-clientes">Clientes</a>
+          <a href="../categorias/lista.html" id="nav-categorias">Categorias</a>
+          <a href="../produtos/lista.html" id="nav-produtos">Produtos</a>
+          <a href="../pedidos/lista.html" id="nav-pedidos">Pedidos</a>
+        </nav>
+      </div>
+    </header>
+    <script>
+      const path = window.location.pathname;
+      if (path.endsWith("/index.html") || path === "/" || path.endsWith("/")) {
+        document.getElementById("nav-inicio").classList.add("active");
+      } else if (path.includes("/clientes/")) {
+        document.getElementById("nav-clientes").classList.add("active");
+      } else if (path.includes("/categorias/")) {
+        document.getElementById("nav-categorias").classList.add("active");
+      } else if (path.includes("/produtos/")) {
+        document.getElementById("nav-produtos").classList.add("active");
+      } else if (path.includes("/pedidos/")) {
+        document.getElementById("nav-pedidos").classList.add("active");
+      }
+    </script>
+
+    <div class="main-container">
+      <div
+        style="
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        "
+      >
+        <h2>Categorias</h2>
+        <a href="cadastro.html" class="button-main" style="margin: 0"
+          >Cadastrar nova</a
+        >
+      </div>
+      <input
+        type="text"
+        id="busca"
+        placeholder="Buscar por nome..."
+        style="margin: 18px 0 8px 0; max-width: 320px"
+      />
+      <div id="feedback-lista"></div>
+      <table id="categorias-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nome</th>
+            <th>Descrição</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div
+      id="modal-editar"
+      style="
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: #0005;
+        z-index: 10;
+        align-items: center;
+        justify-content: center;
+      "
+    >
+      <div
+        style="
+          background: #fff;
+          padding: 28px 24px;
+          border-radius: 12px;
+          min-width: 300px;
+          max-width: 95vw;
+        "
+      >
+        <h3>Editar Categoria</h3>
+        <form id="editar-form">
+          <input type="hidden" id="editar-id" />
+          <label for="editar-nome">Nome*</label>
+          <input type="text" id="editar-nome" required maxlength="80" />
+
+          <label for="editar-descricao">Descrição</label>
+          <textarea id="editar-descricao" rows="3" maxlength="255"></textarea>
+
+          <div class="form-actions" style="margin-top: 18px">
+            <button type="submit" class="button-main">Salvar</button>
+            <button
+              type="button"
+              onclick="fecharModal()"
+              class="button-main"
+              style="background: #bfc9d1; color: #222"
+            >
+              Cancelar
+            </button>
+          </div>
+          <div id="editar-feedback"></div>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      let categorias = [];
+      async function carregarCategorias() {
+        const tbody = document.querySelector("#categorias-table tbody");
+        tbody.innerHTML = "";
+        document.getElementById("feedback-lista").textContent = "";
+
+        try {
+          const resp = await fetch("http://localhost:8080/api/categorias");
+          if (!resp.ok) throw new Error("Erro ao buscar categorias");
+          categorias = await resp.json();
+          mostrarCategorias(categorias);
+        } catch (e) {
+          document.getElementById("feedback-lista").textContent =
+            "Erro ao carregar categorias.";
+        }
+      }
+
+      function mostrarCategorias(lista) {
+        const tbody = document.querySelector("#categorias-table tbody");
+        tbody.innerHTML = "";
+        if (!lista.length) {
+          tbody.innerHTML =
+            '<tr><td colspan="4" style="text-align:center;color:#888;">Nenhuma categoria encontrada.</td></tr>';
+          return;
+        }
+        lista.forEach((cat) => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+          <td>${cat.id}</td>
+          <td>${cat.nome}</td>
+          <td>${cat.descricao || ""}</td>
+          <td>
+            <button class="action-btn edit" onclick="abrirModal(${
+              cat.id
+            })">Editar</button>
+            <button class="action-btn delete" onclick="excluirCategoria(${
+              cat.id
+            })">Excluir</button>
+          </td>
+        `;
+          tbody.appendChild(tr);
+        });
+      }
+
+      document.getElementById("busca").addEventListener("input", function () {
+        const q = this.value.trim().toLowerCase();
+        mostrarCategorias(
+          q
+            ? categorias.filter((c) => c.nome.toLowerCase().includes(q))
+            : categorias
+        );
+      });
+
+      async function excluirCategoria(id) {
+        if (!confirm("Tem certeza que deseja excluir esta categoria?")) return;
+        try {
+          const resp = await fetch(
+            "http://localhost:8080/api/categorias/" + id,
+            { method: "DELETE" }
+          );
+          if (resp.status === 204) {
+            carregarCategorias();
+          } else {
+            const data = await resp.json();
+            alert(data.message || "Erro ao excluir a categoria.");
+          }
+        } catch (e) {
+          alert("Erro ao excluir categoria.");
+        }
+      }
+
+      function abrirModal(id) {
+        const cat = categorias.find((c) => c.id === id);
+        if (!cat) return;
+        document.getElementById("editar-id").value = cat.id;
+        document.getElementById("editar-nome").value = cat.nome;
+        document.getElementById("editar-descricao").value = cat.descricao || "";
+        document.getElementById("editar-feedback").textContent = "";
+        document.getElementById("modal-editar").style.display = "flex";
+      }
+      function fecharModal() {
+        document.getElementById("modal-editar").style.display = "none";
+      }
+
+      document
+        .getElementById("editar-form")
+        .addEventListener("submit", async function (e) {
+          e.preventDefault();
+          const id = document.getElementById("editar-id").value;
+          const nome = document.getElementById("editar-nome").value.trim();
+          const descricao = document
+            .getElementById("editar-descricao")
+            .value.trim();
+          const feedback = document.getElementById("editar-feedback");
+          feedback.textContent = "";
+          feedback.className = "feedback";
+          try {
+            const resp = await fetch(
+              "http://localhost:8080/api/categorias/" + id,
+              {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ nome, descricao }),
+              }
+            );
+            if (resp.ok) {
+              feedback.textContent = "Categoria atualizada!";
+              feedback.classList.add("success");
+              setTimeout(() => {
+                fecharModal();
+                carregarCategorias();
+              }, 800);
+            } else {
+              const data = await resp.json();
+              feedback.textContent = data.message || "Erro ao atualizar.";
+              feedback.classList.add("error");
+            }
+          } catch (e) {
+            feedback.textContent = "Erro ao conectar à API.";
+            feedback.classList.add("error");
+          }
+        });
+
+      document
+        .getElementById("modal-editar")
+        .addEventListener("click", function (e) {
+          if (e.target === this) fecharModal();
+        });
+
+      carregarCategorias();
+    </script>
+  </body>
+</html>

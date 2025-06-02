@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Cadastrar Categoria</title>
+    <link rel="stylesheet" href="../css/styles.css" />
+  </head>
+  <body>
+    <header>
+      <div class="nav-container">
+        <nav>
+          <a href="../index.html" id="nav-inicio">Início</a>
+          <a href="../clientes/lista.html" id="nav-clientes">Clientes</a>
+          <a href="../categorias/lista.html" id="nav-categorias">Categorias</a>
+          <a href="../produtos/lista.html" id="nav-produtos">Produtos</a>
+          <a href="../pedidos/lista.html" id="nav-pedidos">Pedidos</a>
+        </nav>
+      </div>
+    </header>
+    <script>
+      const path = window.location.pathname;
+      if (path.endsWith("/index.html") || path === "/" || path.endsWith("/")) {
+        document.getElementById("nav-inicio").classList.add("active");
+      } else if (path.includes("/clientes/")) {
+        document.getElementById("nav-clientes").classList.add("active");
+      } else if (path.includes("/categorias/")) {
+        document.getElementById("nav-categorias").classList.add("active");
+      } else if (path.includes("/produtos/")) {
+        document.getElementById("nav-produtos").classList.add("active");
+      } else if (path.includes("/pedidos/")) {
+        document.getElementById("nav-pedidos").classList.add("active");
+      }
+    </script>
+
+    <div class="main-container">
+      <h2>Cadastrar Categoria</h2>
+      <form id="categoria-form">
+        <label for="nome">Nome*</label>
+        <input type="text" id="nome" name="nome" required maxlength="80" />
+
+        <label for="descricao">Descrição</label>
+        <textarea
+          id="descricao"
+          name="descricao"
+          rows="3"
+          maxlength="255"
+        ></textarea>
+
+        <div class="form-actions">
+          <button type="submit" class="button-main">Salvar</button>
+          <a
+            href="lista.html"
+            class="button-main"
+            style="background: #bfc9d1; color: #222; text-decoration: none"
+            >Cancelar</a
+          >
+        </div>
+        <div id="form-feedback"></div>
+      </form>
+    </div>
+
+    <script>
+      document
+        .getElementById("categoria-form")
+        .addEventListener("submit", async function (e) {
+          e.preventDefault();
+          const nome = document.getElementById("nome").value.trim();
+          const descricao = document.getElementById("descricao").value.trim();
+
+          const payload = { nome, descricao };
+          const feedback = document.getElementById("form-feedback");
+          feedback.textContent = "";
+          feedback.className = "feedback";
+
+          try {
+            const resp = await fetch("http://localhost:8080/api/categorias", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload),
+            });
+            if (resp.ok) {
+              feedback.textContent = "Categoria cadastrada com sucesso!";
+              feedback.classList.add("success");
+              setTimeout(() => {
+                window.location.href = "lista.html";
+              }, 800);
+            } else {
+              const data = await resp.json();
+              feedback.textContent =
+                data.message || "Erro ao cadastrar categoria.";
+              feedback.classList.add("error");
+            }
+          } catch (err) {
+            feedback.textContent = "Erro: não foi possível conectar à API.";
+            feedback.classList.add("error");
+          }
+        });
+    </script>
+  </body>
+</html>

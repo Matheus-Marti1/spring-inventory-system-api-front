@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Sistema de Cadastro - Página Inicial</title>
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <header>
+      <div class="nav-container">
+        <nav>
+          <a href="index.html" id="nav-inicio">Início</a>
+          <a href="clientes/lista.html" id="nav-clientes">Clientes</a>
+          <a href="categorias/lista.html" id="nav-categorias">Categorias</a>
+          <a href="produtos/lista.html" id="nav-produtos">Produtos</a>
+          <a href="pedidos/lista.html" id="nav-pedidos">Pedidos</a>
+        </nav>
+      </div>
+    </header>
+    <script>
+      const path = window.location.pathname;
+      if (path.endsWith("/index.html") || path === "/" || path.endsWith("/")) {
+        document.getElementById("nav-inicio").classList.add("active");
+      } else if (path.includes("/clientes/")) {
+        document.getElementById("nav-clientes").classList.add("active");
+      } else if (path.includes("/categorias/")) {
+        document.getElementById("nav-categorias").classList.add("active");
+      } else if (path.includes("/produtos/")) {
+        document.getElementById("nav-produtos").classList.add("active");
+      } else if (path.includes("/pedidos/")) {
+        document.getElementById("nav-pedidos").classList.add("active");
+      }
+    </script>
+    <div class="main-container" style="text-align: center">
+      <h1>Bem-vindo ao Sistema de Cadastro</h1>
+      <p>
+        Gerencie clientes, categorias, produtos e pedidos de forma simples e
+        eficiente.
+      </p>
+      <div style="margin: 40px 0">
+        <a href="clientes/lista.html" class="button-main" style="margin: 10px"
+          >Clientes</a
+        >
+        <a href="categorias/lista.html" class="button-main" style="margin: 10px"
+          >Categorias</a
+        >
+        <a href="produtos/lista.html" class="button-main" style="margin: 10px"
+          >Produtos</a
+        >
+        <a href="pedidos/lista.html" class="button-main" style="margin: 10px"
+          >Pedidos</a
+        >
+      </div>
+      <p style="color: #888">
+        Utilize o menu acima ou os botões para navegar entre as funcionalidades
+        do sistema.
+      </p>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Cadastrar Produto</title>
+    <link rel="stylesheet" href="../css/styles.css" />
+  </head>
+  <body>
+    <header>
+      <div class="nav-container">
+        <nav>
+          <a href="../index.html" id="nav-inicio">Início</a>
+          <a href="../clientes/lista.html" id="nav-clientes">Clientes</a>
+          <a href="../categorias/lista.html" id="nav-categorias">Categorias</a>
+          <a href="../produtos/lista.html" id="nav-produtos">Produtos</a>
+          <a href="../pedidos/lista.html" id="nav-pedidos">Pedidos</a>
+        </nav>
+      </div>
+    </header>
+    <script>
+      const path = window.location.pathname;
+      if (path.endsWith("/index.html") || path === "/" || path.endsWith("/")) {
+        document.getElementById("nav-inicio").classList.add("active");
+      } else if (path.includes("/clientes/")) {
+        document.getElementById("nav-clientes").classList.add("active");
+      } else if (path.includes("/categorias/")) {
+        document.getElementById("nav-categorias").classList.add("active");
+      } else if (path.includes("/produtos/")) {
+        document.getElementById("nav-produtos").classList.add("active");
+      } else if (path.includes("/pedidos/")) {
+        document.getElementById("nav-pedidos").classList.add("active");
+      }
+    </script>
+
+    <div class="main-container">
+      <h2>Cadastrar Produto</h2>
+      <form id="produto-form">
+        <label for="nome">Nome*</label>
+        <input type="text" id="nome" name="nome" required maxlength="120" />
+
+        <label for="descricao">Descrição</label>
+        <textarea
+          id="descricao"
+          name="descricao"
+          rows="3"
+          maxlength="255"
+        ></textarea>
+
+        <label for="preco">Preço*</label>
+        <input
+          type="number"
+          id="preco"
+          name="preco"
+          required
+          step="0.01"
+          min="0.01"
+          placeholder="0.00"
+        />
+
+        <label for="estoque">Estoque*</label>
+        <input
+          type="number"
+          id="estoque"
+          name="estoque"
+          required
+          min="0"
+          value="0"
+        />
+
+        <label for="categoria">Categoria*</label>
+        <select id="categoria" name="categoriaId" required>
+          <option value="">Selecione uma categoria</option>
+        </select>
+
+        <div class="form-actions">
+          <button type="submit" class="button-main">Salvar</button>
+          <a
+            href="lista.html"
+            class="button-main"
+            style="background: #bfc9d1; color: #222; text-decoration: none"
+            >Cancelar</a
+          >
+        </div>
+        <div id="form-feedback"></div>
+      </form>
+    </div>
+
+    <script>
+      async function carregarCategorias() {
+        const select = document.getElementById("categoria");
+        try {
+          const resp = await fetch("http://localhost:8080/api/categorias");
+          if (!resp.ok) throw new Error("Erro ao buscar categorias");
+          const categorias = await resp.json();
+          if (!categorias.length) {
+            select.innerHTML =
+              '<option value="">Cadastre uma categoria primeiro</option>';
+            select.disabled = true;
+          } else {
+            select.innerHTML =
+              '<option value="">Selecione uma categoria</option>';
+            categorias.forEach((cat) => {
+              const opt = document.createElement("option");
+              opt.value = cat.id;
+              opt.textContent = cat.nome;
+              select.appendChild(opt);
+            });
+            select.disabled = false;
+          }
+        } catch {
+          select.innerHTML =
+            '<option value="">Erro ao carregar categorias</option>';
+          select.disabled = true;
+        }
+      }
+      carregarCategorias();
+
+      document
+        .getElementById("produto-form")
+        .addEventListener("submit", async function (e) {
+          e.preventDefault();
+          const nome = document.getElementById("nome").value.trim();
+          const descricao = document.getElementById("descricao").value.trim();
+          const preco = document.getElementById("preco").value;
+          const estoque = parseInt(
+            document.getElementById("estoque").value,
+            10
+          );
+          const categoriaId = document.getElementById("categoria").value;
+
+          const payload = {
+            nome,
+            descricao,
+            preco: parseFloat(preco),
+            estoque,
+            categoriaId: categoriaId ? Number(categoriaId) : null,
+          };
+          const feedback = document.getElementById("form-feedback");
+          feedback.textContent = "";
+          feedback.className = "feedback";
+
+          if (!categoriaId) {
+            feedback.textContent = "Selecione uma categoria.";
+            feedback.classList.add("error");
+            return;
+          }
+
+          try {
+            const resp = await fetch("http://localhost:8080/api/produtos", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload),
+            });
+            if (resp.ok) {
+              feedback.textContent = "Produto cadastrado com sucesso!";
+              feedback.classList.add("success");
+              setTimeout(() => {
+                window.location.href = "lista.html";
+              }, 800);
+            } else {
+              const data = await resp.json();
+              feedback.textContent =
+                data.message || "Erro ao cadastrar produto.";
+              feedback.classList.add("error");
+            }
+          } catch (err) {
+            feedback.textContent = "Erro: não foi possível conectar à API.";
+            feedback.classList.add("error");
+          }
+        });
+    </script>
+  </body>
+</html>

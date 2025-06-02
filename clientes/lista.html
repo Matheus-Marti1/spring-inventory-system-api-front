@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Clientes</title>
+    <link rel="stylesheet" href="../css/styles.css" />
+  </head>
+  <body>
+    <header>
+      <div class="nav-container">
+        <nav>
+          <a href="../index.html" id="nav-inicio">Início</a>
+          <a href="../clientes/lista.html" id="nav-clientes">Clientes</a>
+          <a href="../categorias/lista.html" id="nav-categorias">Categorias</a>
+          <a href="../produtos/lista.html" id="nav-produtos">Produtos</a>
+          <a href="../pedidos/lista.html" id="nav-pedidos">Pedidos</a>
+        </nav>
+      </div>
+    </header>
+    <script>
+      const path = window.location.pathname;
+      if (path.endsWith("/index.html") || path === "/" || path.endsWith("/")) {
+        document.getElementById("nav-inicio").classList.add("active");
+      } else if (path.includes("/clientes/")) {
+        document.getElementById("nav-clientes").classList.add("active");
+      } else if (path.includes("/categorias/")) {
+        document.getElementById("nav-categorias").classList.add("active");
+      } else if (path.includes("/produtos/")) {
+        document.getElementById("nav-produtos").classList.add("active");
+      } else if (path.includes("/pedidos/")) {
+        document.getElementById("nav-pedidos").classList.add("active");
+      }
+    </script>
+
+    <div class="main-container">
+      <div
+        style="
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        "
+      >
+        <h2>Clientes</h2>
+        <a href="cadastro.html" class="button-main" style="margin: 0"
+          >Cadastrar novo</a
+        >
+      </div>
+      <input
+        type="text"
+        id="busca"
+        placeholder="Buscar por nome ou e-mail..."
+        style="margin: 18px 0 8px 0; max-width: 320px"
+      />
+      <div id="feedback-lista"></div>
+      <table id="clientes-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nome</th>
+            <th>E-mail</th>
+            <th>Telefone</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div
+      id="modal-editar"
+      style="
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: #0005;
+        z-index: 10;
+        align-items: center;
+        justify-content: center;
+      "
+    >
+      <div
+        style="
+          background: #fff;
+          padding: 28px 24px;
+          border-radius: 12px;
+          min-width: 300px;
+          max-width: 95vw;
+        "
+      >
+        <h3>Editar Cliente</h3>
+        <form id="editar-form">
+          <input type="hidden" id="editar-id" />
+          <label for="editar-nome">Nome*</label>
+          <input type="text" id="editar-nome" required maxlength="100" />
+
+          <label for="editar-email">E-mail*</label>
+          <input type="email" id="editar-email" required maxlength="100" />
+
+          <label for="editar-telefone">Telefone</label>
+          <input
+            type="tel"
+            id="editar-telefone"
+            maxlength="15"
+            placeholder="(xx) xxxxx-xxxx"
+          />
+
+          <div class="form-actions" style="margin-top: 18px">
+            <button type="submit" class="button-main">Salvar</button>
+            <button
+              type="button"
+              onclick="fecharModal()"
+              class="button-main"
+              style="background: #bfc9d1; color: #222"
+            >
+              Cancelar
+            </button>
+          </div>
+          <div id="editar-feedback"></div>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      function formatarTelefone(numero) {
+        if (!numero) return "";
+        numero = numero.replace(/\D/g, "");
+        if (numero.length === 11) {
+          return numero.replace(/^(\d{2})(\d{5})(\d{4})$/, "($1) $2-$3");
+        } else if (numero.length === 10) {
+          return numero.replace(/^(\d{2})(\d{4})(\d{4})$/, "($1) $2-$3");
+        } else if (numero.length > 2) {
+          return numero.replace(/^(\d{2})(\d*)$/, "($1) $2");
+        } else {
+          return numero;
+        }
+      }
+
+      let clientes = [];
+
+      async function carregarClientes() {
+        const tbody = document.querySelector("#clientes-table tbody");
+        tbody.innerHTML = "";
+        document.getElementById("feedback-lista").textContent = "";
+
+        try {
+          const resp = await fetch("http://localhost:8080/api/clientes");
+          if (!resp.ok) throw new Error("Erro ao buscar clientes");
+          clientes = await resp.json();
+          mostrarClientes(clientes);
+        } catch (e) {
+          document.getElementById("feedback-lista").textContent =
+            "Erro ao carregar clientes.";
+        }
+      }
+
+      function mostrarClientes(lista) {
+        const tbody = document.querySelector("#clientes-table tbody");
+        tbody.innerHTML = "";
+        if (!lista.length) {
+          tbody.innerHTML =
+            '<tr><td colspan="5" style="text-align:center;color:#888;">Nenhum cliente encontrado.</td></tr>';
+          return;
+        }
+        lista.forEach((cli) => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+          <td>${cli.id}</td>
+          <td>${cli.nome}</td>
+          <td>${cli.email}</td>
+          <td>${formatarTelefone(cli.telefone)}</td>
+          <td>
+            <button class="action-btn edit" onclick="abrirModal(${
+              cli.id
+            })">Editar</button>
+            <button class="action-btn delete" onclick="excluirCliente(${
+              cli.id
+            })">Excluir</button>
+          </td>
+        `;
+          tbody.appendChild(tr);
+        });
+      }
+
+      document.getElementById("busca").addEventListener("input", function () {
+        const q = this.value.trim().toLowerCase();
+        mostrarClientes(
+          q
+            ? clientes.filter(
+                (c) =>
+                  c.nome.toLowerCase().includes(q) ||
+                  (c.email && c.email.toLowerCase().includes(q))
+              )
+            : clientes
+        );
+      });
+
+      async function excluirCliente(id) {
+        if (!confirm("Tem certeza que deseja excluir este cliente?")) return;
+        try {
+          const resp = await fetch("http://localhost:8080/api/clientes/" + id, {
+            method: "DELETE",
+          });
+          if (resp.status === 204) {
+            carregarClientes();
+          } else {
+            const data = await resp.json();
+            alert(data.message || "Erro ao excluir o cliente.");
+          }
+        } catch (e) {
+          alert("Erro ao excluir cliente.");
+        }
+      }
+      function abrirModal(id) {
+        const cli = clientes.find((c) => c.id === id);
+        if (!cli) return;
+        document.getElementById("editar-id").value = cli.id;
+        document.getElementById("editar-nome").value = cli.nome;
+        document.getElementById("editar-email").value = cli.email;
+        document.getElementById("editar-telefone").value = formatarTelefone(
+          cli.telefone
+        );
+        document.getElementById("editar-feedback").textContent = "";
+        document.getElementById("modal-editar").style.display = "flex";
+      }
+      function fecharModal() {
+        document.getElementById("modal-editar").style.display = "none";
+      }
+
+      document
+        .getElementById("editar-telefone")
+        .addEventListener("input", function (e) {
+          let value = e.target.value.replace(/\D/g, "");
+          if (value.length > 11) value = value.slice(0, 11);
+          if (value.length > 10) {
+            value = value.replace(/^(\d{2})(\d{5})(\d{4}).*/, "($1) $2-$3");
+          } else if (value.length > 6) {
+            value = value.replace(/^(\d{2})(\d{4})(\d{0,4}).*/, "($1) $2-$3");
+          } else if (value.length > 2) {
+            value = value.replace(/^(\d{2})(\d{0,5})/, "($1) $2");
+          } else {
+            value = value.replace(/^(\d*)/, "($1");
+          }
+          e.target.value = value;
+        });
+
+      document
+        .getElementById("editar-form")
+        .addEventListener("submit", async function (e) {
+          e.preventDefault();
+          const id = document.getElementById("editar-id").value;
+          const nome = document.getElementById("editar-nome").value.trim();
+          const email = document.getElementById("editar-email").value.trim();
+          const telefone = document
+            .getElementById("editar-telefone")
+            .value.replace(/\D/g, "");
+          const feedback = document.getElementById("editar-feedback");
+          feedback.textContent = "";
+          feedback.className = "feedback";
+          try {
+            const resp = await fetch(
+              "http://localhost:8080/api/clientes/" + id,
+              {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ nome, email, telefone }),
+              }
+            );
+            if (resp.ok) {
+              feedback.textContent = "Cliente atualizado!";
+              feedback.classList.add("success");
+              setTimeout(() => {
+                fecharModal();
+                carregarClientes();
+              }, 800);
+            } else {
+              const data = await resp.json();
+              feedback.textContent = data.message || "Erro ao atualizar.";
+              feedback.classList.add("error");
+            }
+          } catch (e) {
+            feedback.textContent = "Erro ao conectar à API.";
+            feedback.classList.add("error");
+          }
+        });
+
+      document
+        .getElementById("modal-editar")
+        .addEventListener("click", function (e) {
+          if (e.target === this) fecharModal();
+        });
+
+      carregarClientes();
+    </script>
+  </body>
+</html>
