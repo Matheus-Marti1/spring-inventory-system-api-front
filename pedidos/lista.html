@@ -92,6 +92,7 @@
             <th>ID</th>
             <th>Cliente</th>
             <th>Data</th>
+            <!-- <th>Itens</th> -->
             <th>Total</th>
             <th>Ações</th>
           </tr>
@@ -105,11 +106,9 @@
 
       function formatarData(dataStr) {
         if (!dataStr) return "";
-        const d = new Date(dataStr);
-        if (isNaN(d)) return dataStr;
-        const dia = String(d.getDate()).padStart(2, "0");
-        const mes = String(d.getMonth() + 1).padStart(2, "0");
-        const ano = d.getFullYear();
+        const partes = dataStr.split("-");
+        if (partes.length !== 3) return dataStr;
+        const [ano, mes, dia] = partes;
         return `${dia}/${mes}/${ano}`;
       }
 
@@ -130,6 +129,7 @@
       }
 
       async function carregarPedidosAvancado(filtros) {
+        console.log(filtros)
         const tbody = document.querySelector("#pedidos-table tbody");
         tbody.innerHTML = "";
         document.getElementById("feedback-lista").textContent = "";
@@ -160,11 +160,24 @@
           return;
         }
         lista.forEach((ped) => {
+        //   const itensHtml = ped.itens
+        //     .map(
+        //       (item) =>
+        //         `<div>
+        //   ${item.produto.nome} - ${
+        //           item.quantidade
+        //         }x R$ ${item.precoUnitario.toFixed(2)}
+        // </div>`
+        //     )
+        //     .join("");
+
+        // <td>${itensHtml}</td> 
           const tr = document.createElement("tr");
           tr.innerHTML = `
           <td>${ped.id || ped.pedidoId || ""}</td>
           <td>${ped.cliente ? ped.cliente.nome : ped.clienteNome || ""}</td>
           <td>${formatarData(ped.data)}</td>
+          
           <td>R$ ${(ped.total || 0).toLocaleString("pt-BR", {
             minimumFractionDigits: 2,
           })}</td>

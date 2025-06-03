@@ -40,9 +40,6 @@
           <option value="">Selecione um cliente</option>
         </select>
 
-        <label for="data">Data do Pedido*</label>
-        <input type="date" id="data" name="data" required />
-
         <label>Produtos*</label>
         <div id="produtos-lista"></div>
 
@@ -139,7 +136,6 @@
         .addEventListener("submit", async function (e) {
           e.preventDefault();
           const clienteId = document.getElementById("cliente").value;
-          const data = document.getElementById("data").value;
           const produtosMarcados = Array.from(
             document.querySelectorAll(".produto-checkbox:checked")
           );
@@ -149,11 +145,6 @@
 
           if (!clienteId) {
             feedback.textContent = "Selecione um cliente.";
-            feedback.classList.add("error");
-            return;
-          }
-          if (!data) {
-            feedback.textContent = "Informe a data do pedido.";
             feedback.classList.add("error");
             return;
           }
@@ -179,7 +170,6 @@
 
           const payload = {
             clienteId: Number(clienteId),
-            data,
             itens,
           };
 
